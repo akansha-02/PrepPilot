@@ -1,5 +1,6 @@
 import { env } from '../config/env.js';
 import { safeJsonParse, ensureArray } from '../utils/json.js';
+import { HttpError } from '../utils/httpError.js';
 
 function normalizeQuestionPayload(payload) {
   const questions = ensureArray(payload?.questions)
@@ -59,6 +60,10 @@ async function callOpenAI({ systemPrompt, userPrompt }) {
   });
 
   if (!response.ok) {
+    if (response.status === 429) {
+      throw new HttpError(503, 'The OpenAI account has reached its rate or usage limit. Add billing/credits or use another AI provider.');
+    }
+
     throw new Error(`OpenAI request failed with status ${response.status}`);
   }
 
@@ -87,6 +92,10 @@ async function callGemini({ systemPrompt, userPrompt }) {
   });
 
   if (!response.ok) {
+    if (response.status === 429) {
+      throw new HttpError(503, 'The Gemini account has reached its rate or usage limit. Check the API quota or use another AI provider.');
+    }
+
     throw new Error(`Gemini request failed with status ${response.status}`);
   }
 
