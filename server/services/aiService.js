@@ -38,39 +38,6 @@ function normalizeEvaluationPayload(payload) {
   };
 }
 
-async function callOpenAI({ systemPrompt, userPrompt }) {
-  if (!env.openAiApiKey) {
-    throw new Error('OPENAI_API_KEY is not configured.');
-  }
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.openAiApiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: env.openAiModel,
-      temperature: 0.4,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ]
-    })
-  });
-
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new HttpError(503, 'The OpenAI account has reached its rate or usage limit. Add billing/credits or use another AI provider.');
-    }
-
-    throw new Error(`OpenAI request failed with status ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data?.choices?.[0]?.message?.content || '';
-}
-
 async function callGemini({ systemPrompt, userPrompt }) {
   if (!env.geminiApiKey) {
     throw new Error('GEMINI_API_KEY is not configured.');
@@ -93,7 +60,7 @@ async function callGemini({ systemPrompt, userPrompt }) {
 
   if (!response.ok) {
     if (response.status === 429) {
-      throw new HttpError(503, 'The Gemini account has reached its rate or usage limit. Check the API quota or use another AI provider.');
+      throw new HttpError(503, 'The Gemini account has reached its rate or usage limit. Check the API quota or try again later.');
     }
 
     throw new Error(`Gemini request failed with status ${response.status}`);
@@ -103,22 +70,14 @@ async function callGemini({ systemPrompt, userPrompt }) {
   return data?.candidates?.[0]?.content?.parts?.map((part) => part.text).join('') || '';
 }
 
-async function callModel(prompt) {
-  if (env.aiProvider === 'gemini') {
-    return callGemini(prompt);
-  }
-
-  return callOpenAI(prompt);
-}
-
 export async function generateQuestionsPrompt(prompt) {
-  const content = await callModel(prompt);
+  const content = await callGemini(prompt);
   const parsed = safeJsonParse(content);
   return normalizeQuestionPayload(parsed);
 }
 
 export async function evaluateAnswerPrompt(prompt) {
-  const content = await callModel(prompt);
+  const content = await callGemini(prompt);
   const parsed = safeJsonParse(content);
   return normalizeEvaluationPayload(parsed);
 }

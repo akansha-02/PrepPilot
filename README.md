@@ -7,7 +7,7 @@ PrepPilot is a MERN interview-prep chatbot that generates role-specific intervie
 - React + Vite frontend
 - Express + Node.js API
 - MongoDB with Mongoose
-- OpenAI or Gemini for AI generation and evaluation
+- Google Gemini for AI question generation and answer evaluation
 - Tailwind CSS for styling
 
 ## Features
@@ -39,11 +39,8 @@ Copy `.env.example` to `.env` and fill in your values.
 PORT=5000
 CLIENT_ORIGIN=http://localhost:5173
 MONGODB_URI=mongodb://127.0.0.1:27017/preppilot
-AI_PROVIDER=openai
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4o-mini
 GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-1.5-flash
+GEMINI_MODEL=gemini-3.1-flash-lite
 ```
 
 ## Setup
@@ -121,6 +118,6 @@ Answer evaluation must return:
 
 ## Notes
 
-- The MVP keeps all AI calls server-side.
+- The MVP keeps all AI calls server-side and uses Gemini exclusively.
 - Session history is stored in MongoDB.
 - The frontend expects strict JSON from the model, so response validation is important.
