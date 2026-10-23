@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingState from '../components/ui/LoadingState';
 import EmptyState from '../components/ui/EmptyState';
-import { Input, Textarea } from '../components/ui/Field';
+import { Textarea } from '../components/ui/Field';
 import { sessionsApi } from '../lib/api';
 import QuestionCard from '../components/interview/QuestionCard';
 import FeedbackPanel from '../components/interview/FeedbackPanel';
+
+function sourceLabel(sourceType) {
+  return sourceType === 'job-description' ? 'Job description' : 'Resume';
+}
 
 export default function InterviewPage() {
   const { sessionId } = useParams();
@@ -62,21 +65,30 @@ export default function InterviewPage() {
     }
   };
 
+  const handleAnswerKeyDown = (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault();
+      if (answer.trim() && !saving && currentQuestion) {
+        submitAnswer(event);
+      }
+    }
+  };
+
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <LoadingState label="Loading your interview session..." />
+      <div className="page">
+        <LoadingState label="Loading your session…" />
       </div>
     );
   }
 
   if (error && !session) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="page max-w-3xl">
         <EmptyState
           title="Could not open this session"
           description={error}
-          action={<Link to="/dashboard"><Button>Back to dashboard</Button></Link>}
+          action={<Link to="/dashboard" className="btn-primary">Back to dashboard</Link>}
         />
       </div>
     );
@@ -86,68 +98,181 @@ export default function InterviewPage() {
 
   const isCompleted = session.status === 'completed';
 
+  const answeredScores = (session.questions || [])
+    .map((question) => question.evaluation?.score)
+    .filter((score) => typeof score === 'number');
+  const averageScore = answeredScores.length
+    ? Math.round(answeredScores.reduce((sum, score) => sum + score, 0) / answeredScores.length)
+    : null;
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 className="section-title">{session.title}</h2>
-          <p className="section-copy">{session.role} · {session.level} · {session.questions?.length || 0} questions</p>
+    <div className="page">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="font-mono text-xs text-ink-muted">
+            {session.role}, {session.level} — {sourceLabel(session.sourceType)}
+          </p>
+          <h1 className="page-title mt-1.5 truncate">{session.title || 'Untitled session'}</h1>
         </div>
-        <Link to="/history" className="text-sm font-semibold text-brand-300 hover:text-brand-200">Review all sessions</Link>
+        <Link
+          to="/history"
+          className="text-sm font-medium text-ink-muted underline-offset-4 transition-colors hover:text-ink hover:underline"
+        >
+          All sessions
+        </Link>
       </div>
 
-      <div className="mb-6 h-2 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full bg-gradient-to-r from-brand-400 to-accent-400 transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
+      <div className="mt-6 md:mt-8">
+        {session.questions?.length ? (
+          <span className="font-mono text-xs text-ink-muted">
+            {isCompleted
+              ? 'Session complete'
+              : `Question ${session.currentQuestionIndex + 1} of ${session.questions.length}`}
+          </span>
+        ) : null}
+        {progress > 0 ? (
+          <div className="mt-2 h-1.5 w-full overflow-hidden bg-line">
+            <div
+              className="h-full bg-ink transition-[width] duration-300 motion-reduce:transition-none"
+              style={{ width: `${Math.min(progress, 100)}%` }}
+            />
+          </div>
+        ) : null}
       </div>
 
       {isCompleted ? (
-        <Card>
-          <h3 className="text-xl font-semibold text-white">Interview completed</h3>
-          <p className="mt-2 text-slate-300">You finished all questions for this session. Review the feedback below and revisit earlier answers anytime.</p>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {session.questions.map((questionItem, index) => (
-              <Card key={index} className="bg-white/5">
-                <p className="text-sm font-semibold text-white">Q{index + 1}. {questionItem.question}</p>
-                <p className="mt-2 text-sm text-slate-400">Score: {questionItem.evaluation?.score ?? '—'}</p>
-                <p className="mt-2 text-sm text-slate-300">{questionItem.evaluation?.betterAnswer}</p>
-              </Card>
-            ))}
-          </div>
-        </Card>
-      ) : !currentQuestion ? (
-        <EmptyState title="Waiting for questions" description="This session does not have generated questions yet. Go back to the dashboard and create a fresh session." action={<Link to="/interview/new"><Button>Start a new session</Button></Link>} />
-      ) : (
-        <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-          <Card>
-            <QuestionCard question={currentQuestion} index={session.currentQuestionIndex} total={session.questions.length} />
+        <div className="mt-8">
+          <div className="sheet divide-y divide-line">
+            <div className="flex flex-wrap items-end justify-between gap-4 px-5 py-5 md:px-7">
+              <div>
+                <h2 className="font-display text-2xl font-bold tracking-tight text-ink">
+                  Interview complete
+                </h2>
+                <p className="mt-1 text-sm text-ink-muted">Your answers, scored and recorded.</p>
+              </div>
+              {averageScore !== null ? (
+                <div className="flex items-center gap-3">
+                  <span className="bg-marker px-3 py-2 font-display text-4xl font-extrabold leading-none tracking-tight text-ink">
+                    {averageScore}
+                  </span>
+                  <span className="font-mono text-xs text-ink-faint">avg. score</span>
+                </div>
+              ) : null}
+            </div>
 
-            <form onSubmit={submitAnswer} className="mt-6 grid gap-4">
+            <ol>
+              {session.questions.map((questionItem, index) => (
+                <li key={index}>
+                  <details className="group">
+                    <summary className="flex cursor-pointer items-start gap-4 px-5 py-4 transition-colors hover:bg-paper-deep md:px-7">
+                      <span className="relative top-[3px] font-mono text-sm text-ink-faint">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <span className="min-w-0 flex-1 text-sm font-medium text-ink">
+                        {questionItem.question}
+                      </span>
+                      <span className="relative top-[3px] font-mono text-sm text-ink-soft">
+                        {questionItem.evaluation?.score ?? '—'}
+                      </span>
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 16 16"
+                        className="relative top-[2px] h-3.5 w-3.5 shrink-0 text-ink-muted transition-transform group-open:rotate-90 motion-reduce:transition-none"
+                        fill="none"
+                      >
+                        <path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.5" />
+                      </svg>
+                    </summary>
+                    <div className="border-t border-line px-5 py-4 md:px-7">
+                      <p className="text-[13px] font-semibold text-ink-soft">Improved answer</p>
+                      <blockquote className="mt-2 border-l-2 border-ink pl-4 text-sm leading-6 text-ink-soft">
+                        {questionItem.evaluation?.betterAnswer ??
+                          'No evaluation was recorded for this question.'}
+                      </blockquote>
+                    </div>
+                  </details>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link to="/interview/new" className="btn-primary">New interview</Link>
+            <Link to="/dashboard" className="btn-secondary">Back to dashboard</Link>
+          </div>
+        </div>
+      ) : !currentQuestion ? (
+        <div className="mt-8">
+          <EmptyState
+            title="No questions yet"
+            description="This session has no generated questions. Create a fresh session to start interviewing."
+            action={<Link to="/interview/new" className="btn-primary">New interview</Link>}
+          />
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-4 lg:grid-cols-[1.5fr_0.9fr]">
+          <div className="grid content-start gap-4">
+            <QuestionCard
+              question={currentQuestion}
+              index={session.currentQuestionIndex}
+              total={session.questions.length}
+            />
+
+            <form onSubmit={submitAnswer} className="sheet p-5 md:p-6">
+              <div className="flex items-baseline justify-between gap-3">
+                <label htmlFor="answer" className="field-label">Your answer</label>
+                <span className="font-mono text-xs text-ink-faint">Ctrl+Enter to submit</span>
+              </div>
               <Textarea
+                id="answer"
+                className="mt-2"
+                rows={8}
                 value={answer}
                 onChange={(event) => setAnswer(event.target.value)}
-                placeholder="Type your answer here..."
+                onKeyDown={handleAnswerKeyDown}
+                placeholder="Answer as if the interviewer is in the room…"
                 required
               />
-              {error && <p className="text-sm font-medium text-red-300">{error}</p>}
-              <div className="flex flex-wrap gap-3">
+              {error ? (
+                <p role="alert" className="mt-3 text-sm font-medium text-danger">{error}</p>
+              ) : null}
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Button type="submit" disabled={saving || !answer.trim()}>
-                  {saving ? 'Evaluating answer...' : 'Submit answer'}
+                  {saving ? 'Evaluating…' : 'Submit answer'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setAnswer('')}>
-                  Clear
+                <Button type="button" variant="ghost" onClick={() => setAnswer('')} disabled={saving}>
+                  Discard
                 </Button>
               </div>
             </form>
-          </Card>
+          </div>
 
-          <div className="grid gap-6">
-            <Card>
-              <h4 className="text-lg font-semibold text-white">Session context</h4>
-              <p className="mt-3 text-sm leading-6 text-slate-300">Source type: {session.sourceType}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{session.sourceText}</p>
-            </Card>
+          <div className="grid content-start gap-4">
+            {feedback ? (
+              <FeedbackPanel evaluation={feedback} />
+            ) : (
+              <section className="sheet p-5 md:p-6" aria-label="Answer feedback">
+                <p className="text-sm leading-6 text-ink-muted">
+                  Submit an answer to get a scored review: what worked, what to change, and one
+                  improved answer.
+                </p>
+              </section>
+            )}
 
-            {feedback ? <FeedbackPanel evaluation={feedback} /> : <EmptyState title="AI feedback will appear here" description="Submit your answer to see a score, strengths, weaknesses, and an improved sample response." />}
+            <section className="sheet p-5 md:p-6">
+              <p className="field-label">Session source</p>
+              <p className="mt-1 text-[13px] text-ink-muted">
+                {sourceLabel(session.sourceType)} — {session.sourceText?.length || 0} characters
+              </p>
+              <details className="mt-3 border-t border-line pt-3">
+                <summary className="cursor-pointer text-sm font-medium text-ink">
+                  Read the full text
+                </summary>
+                <p className="mt-2 max-h-72 overflow-y-auto break-words whitespace-pre-wrap text-[13px] leading-6 text-ink-soft">
+                  {session.sourceText}
+                </p>
+              </details>
+            </section>
           </div>
         </div>
       )}
