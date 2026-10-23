@@ -1,48 +1,68 @@
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import { useMemo } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 
-const navItems = [
+const desktopLinks = [
   { to: '/dashboard', label: 'Dashboard' },
-  { to: '/interview/new', label: 'New Session' },
   { to: '/history', label: 'History' }
 ];
 
-export default function AppShell({ children }) {
-  const location = useLocation();
-  const compact = useMemo(() => location.pathname.startsWith('/interview/'), [location.pathname]);
+const mobileLinks = [
+  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/interview/new', label: 'New interview' },
+  { to: '/history', label: 'History' }
+];
 
+const desktopClass = ({ isActive }) =>
+  `relative text-sm font-medium transition-colors ${
+    isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'
+  }`;
+
+export default function AppShell({ children }) {
   return (
-    <div className="min-h-screen text-slate-100">
-      <header className={`sticky top-0 z-50 border-b border-white/10 ${compact ? 'bg-slate-950/80 backdrop-blur-xl' : 'bg-slate-950/80 backdrop-blur-xl'}`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-brand-400 to-accent-400 text-lg font-black text-slate-950 shadow-glow">
-              PP
-            </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-200">PrepPilot</p>
-              <p className="text-xs text-slate-400">AI interview practice studio</p>
-            </div>
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-50 border-b border-line bg-paper">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
+          <Link to="/" className="font-display text-xl font-extrabold tracking-tight text-ink">
+            PrepPilot
           </Link>
 
-          <nav className="hidden items-center gap-2 md:flex">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `rounded-full px-4 py-2 text-sm font-medium transition ${isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}`
-                }
-              >
-                {item.label}
+          <nav className="hidden items-center gap-7 md:flex" aria-label="Main">
+            {desktopLinks.map((item) => (
+              <NavLink key={item.to} to={item.to} className={desktopClass}>
+                {({ isActive }) => (
+                  <>
+                    {item.label}
+                    {isActive ? (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -bottom-[7px] left-0 h-[3px] w-full bg-marker"
+                      />
+                    ) : null}
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
 
-          <Link to="/interview/new" className="btn-primary">
-            Start interview
+          <Link to="/interview/new" className="btn-primary hidden md:inline-flex">
+            New interview
           </Link>
         </div>
+
+        <nav className="grid grid-cols-3 border-t border-line md:hidden" aria-label="Main">
+          {mobileLinks.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `border-r border-line py-2.5 text-center text-[13px] font-medium transition-colors last:border-r-0 ${
+                  isActive ? 'bg-marker/40 text-ink' : 'text-ink-muted'
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
       </header>
 
       <main>{children}</main>
