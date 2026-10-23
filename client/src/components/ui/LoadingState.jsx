@@ -1,10 +1,16 @@
-export default function LoadingState({ label = 'Loading your interview experience...' }) {
+export default function LoadingState({ label = 'Loading…' }) {
   return (
-    <div className="flex min-h-[280px] items-center justify-center rounded-3xl border border-white/10 bg-white/5 p-8 text-slate-300">
-      <div className="flex items-center gap-3">
-        <span className="h-3 w-3 animate-pulse rounded-full bg-brand-400" />
-        <span className="text-sm font-medium">{label}</span>
+    <div className="sheet flex min-h-64 flex-col items-center justify-center gap-4 p-10" role="status">
+      <div className="flex gap-1.5" aria-hidden="true">
+        {[0, 1, 2].map((dot) => (
+          <span
+            key={dot}
+            className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink motion-reduce:animate-none"
+            style={{ animationDelay: `${dot * 160}ms` }}
+          />
+        ))}
       </div>
+      <p className="text-sm text-ink-muted">{label}</p>
     </div>
   );
 }

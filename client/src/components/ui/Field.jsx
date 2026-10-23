@@ -1,11 +1,13 @@
-export function Input(props) {
-  return <input className="field" {...props} />;
+import clsx from 'clsx';
+
+export function Input({ className, ...props }) {
+  return <input className={clsx('field', className)} {...props} />;
 }
 
-export function Textarea(props) {
-  return <textarea className="field min-h-[140px] resize-y" {...props} />;
+export function Textarea({ className, ...props }) {
+  return <textarea className={clsx('field resize-y', className)} {...props} />;
 }
 
-export function Select(props) {
-  return <select className="field" {...props} />;
+export function Select({ className, ...props }) {
+  return <select className={clsx('field', className)} {...props} />;
 }
