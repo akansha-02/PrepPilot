@@ -1,43 +1,67 @@
-import Card from '../ui/Card';
-
 export default function FeedbackPanel({ evaluation }) {
-  if (!evaluation) {
-    return (
-      <Card>
-        <h4 className="text-lg font-semibold text-white">Feedback</h4>
-        <p className="mt-3 text-sm text-slate-300">Submit an answer to see structured AI feedback.</p>
-      </Card>
-    );
-  }
+  const score = evaluation?.score;
 
   return (
-    <Card>
-      <h4 className="text-lg font-semibold text-white">Feedback</h4>
-      <div className="mt-4 space-y-4 text-sm text-slate-300">
-        <p><span className="font-semibold text-white">Score:</span> {evaluation.score}</p>
-        <div>
-          <p className="font-semibold text-white">Strengths</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            {evaluation.strengths?.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-        </div>
-        <div>
-          <p className="font-semibold text-white">Weaknesses</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            {evaluation.weaknesses?.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-        </div>
-        <div>
-          <p className="font-semibold text-white">Better answer</p>
-          <p className="mt-2 leading-6 text-slate-200">{evaluation.betterAnswer}</p>
-        </div>
-        <div>
-          <p className="font-semibold text-white">Tips</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            {evaluation.tips?.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-        </div>
+    <section className="sheet p-5 md:p-6" aria-label="Answer feedback">
+      <div className="flex items-center gap-3">
+        <span className="bg-marker px-3 py-2 font-display text-5xl font-extrabold leading-none tracking-tight text-ink md:text-6xl">
+          {score ?? '—'}
+        </span>
+        <span className="font-mono text-xs text-ink-faint">/ 100</span>
       </div>
-    </Card>
+
+      <div className="mt-6 space-y-6">
+        {evaluation?.strengths?.length ? (
+          <div>
+            <h3 className="text-[13px] font-semibold text-ink-soft">What worked</h3>
+            <ul className="mt-2 space-y-2">
+              {evaluation.strengths.map((item) => (
+                <li key={item} className="flex gap-2.5 text-sm leading-6 text-ink-soft">
+                  <span aria-hidden="true" className="font-medium text-ink">+</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {evaluation?.weaknesses?.length ? (
+          <div>
+            <h3 className="text-[13px] font-semibold text-ink-soft">What to improve</h3>
+            <ul className="mt-2 space-y-2">
+              {evaluation.weaknesses.map((item) => (
+                <li key={item} className="flex gap-2.5 text-sm leading-6 text-ink-soft">
+                  <span aria-hidden="true" className="font-medium text-ink">–</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {evaluation?.betterAnswer ? (
+          <div>
+            <h3 className="text-[13px] font-semibold text-ink-soft">Improved answer</h3>
+            <blockquote className="mt-2 border-l-2 border-ink pl-4 text-sm leading-6 text-ink-soft">
+              {evaluation.betterAnswer}
+            </blockquote>
+          </div>
+        ) : null}
+
+        {evaluation?.tips?.length ? (
+          <div>
+            <h3 className="text-[13px] font-semibold text-ink-soft">Tips</h3>
+            <ol className="mt-2 space-y-1.5">
+              {evaluation.tips.map((item, tipIndex) => (
+                <li key={item} className="flex gap-3 text-sm leading-5 text-ink-soft">
+                  <span className="font-mono text-xs leading-5 text-ink-faint">{tipIndex + 1}</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
+      </div>
+    </section>
   );
 }
